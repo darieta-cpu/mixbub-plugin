@@ -40,6 +40,11 @@ juce_add_plugin(MasterChain
 target_sources(MasterChain PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginProcessor.h
+    Source/PluginEditor.cpp
+    Source/PluginEditor.h
+    Source/UI/Look.h
+    Source/UI/Meters.h
+    Source/UI/Controls.h
     Source/DSP/DspCommon.h
     Source/DSP/Filters.h
     Source/DSP/PultecEQ.h

@@ -36,6 +36,11 @@ public:
 
     juce::AudioProcessorValueTreeState apvts;
 
+    // Valori per i meter della GUI: ogni lettura restituisce il massimo dall'ultima lettura e lo azzera
+    float takeInputPeak (int channel) { return (channel == 0 ? inPeakL : inPeakR).exchange (0.0f); }
+    float takeCompGainReductionDb()    { return compressor.takeGainReductionDb(); }
+    float takeLimiterGainReductionDb() { return limiter.takeGainReductionDb(); }
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
 
@@ -46,6 +51,7 @@ private:
     mc::Limiter       limiter;
 
     float lastInGain = 1.0f;
+    std::atomic<float> inPeakL { 0.0f }, inPeakR { 0.0f };
 
     struct Ptrs
     {

@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <vector>
 #include "DspCommon.h"
 
@@ -41,6 +42,7 @@ public:
     void process (float* const* ch, int numCh, int n)
     {
         numCh = std::min (numCh, 2);
+        double blockMinGain = 1.0;
         for (int i = 0; i < n; ++i)
         {
             const double g = gIn.next();
@@ -74,12 +76,17 @@ public:
             double sum = 0.0;
             for (int k = 0; k < D; ++k) sum += mbuf[(size_t) k];
             const double gain = sum / (double) D;
+            blockMinGain = std::min (blockMinGain, gain);
             if (++wr >= D) wr = 0;
 
             for (int c = 0; c < numCh; ++c)
                 ch[c][i] = (float) std::clamp ((double) delayed[c] * gain, -ceil, ceil);   // clamp di sicurezza
         }
+        atomicMax (meter, (float) std::max (0.0, -gainToDb (blockMinGain)));
     }
+
+    // Massima riduzione (dB, positiva) dall'ultima lettura: chiamata dalla GUI
+    float takeGainReductionDb() { return meter.exchange (0.0f); }
 
 private:
     double fs = 44100.0, ceil = 0.966, relC = 0.9, env = 1.0;
@@ -88,5 +95,6 @@ private:
     std::vector<float> delay[2];
     std::vector<double> rbuf, mbuf;
     Smoother gIn;
+    std::atomic<float> meter { 0.0f };
 };
 } // namespace mc

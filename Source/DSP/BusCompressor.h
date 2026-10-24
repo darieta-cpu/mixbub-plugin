@@ -86,10 +86,11 @@ public:
                 ch[c][i] = (float) (dry + (dry * g - dry) * mix);
             }
         }
-        meter.store ((float) -blockMinGr);
+        atomicMax (meter, (float) -blockMinGr);
     }
 
-    float getGainReductionDb() const { return meter.load(); }
+    // Massima riduzione (dB, positiva) dall'ultima lettura: chiamata dalla GUI
+    float takeGainReductionDb() { return meter.exchange (0.0f); }
 
 private:
     double coef (double sec) const { return std::exp (-1.0 / (std::max (sec, 1.0e-5) * fs)); }

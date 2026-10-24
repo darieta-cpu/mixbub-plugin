@@ -20,5 +20,5 @@ JUCE viene scaricato da GitHub, oppure usa una cartella `JUCE/` locale / `-DJUCE
 ## Stato
 - DSP testato da riga di comando (filtri, compressore, limiter, EQ).
 - Parte JUCE (processor, parametri) non ancora compilata: se il build dà errori, mandameli.
-- GUI generica di JUCE. Meter GR disponibile in `BusCompressor::getGainReductionDb()`, da usare nella GUI vera.
+- GUI custom (Source/PluginEditor.*, Source/UI/*) con meter di input, GR compressore e GR limiter.
 - Limiter senza true peak/oversampling (passo successivo).

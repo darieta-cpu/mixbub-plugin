@@ -1,4 +1,5 @@
 #include "PluginProcessor.h"
+#include "PluginEditor.h"
 
 namespace
 {
@@ -19,14 +20,36 @@ juce::NormalisableRange<float> logRange (float lo, float hi)
 std::unique_ptr<APF> fp (const char* id, const char* name, float lo, float hi, float def,
                          const char* unit = "", float step = 0.0f)
 {
-    return std::make_unique<APF> (pid (id), name, juce::NormalisableRange<float> (lo, hi, step), def,
-                                  juce::AudioParameterFloatAttributes().withLabel (unit));
+    const int decimals = step >= 1.0f ? 0 : (step >= 0.1f ? 1 : 2);
+    const juce::String u (unit);
+    auto attr = juce::AudioParameterFloatAttributes()
+                    .withLabel (u)
+                    .withStringFromValueFunction ([u, decimals] (float v, int)
+                    {
+                        return juce::String (v, decimals) + (u.isEmpty() ? juce::String() : " " + u);
+                    })
+                    .withValueFromStringFunction ([] (const juce::String& t) { return t.getFloatValue(); });
+    return std::make_unique<APF> (pid (id), name, juce::NormalisableRange<float> (lo, hi, step), def, attr);
 }
 
 std::unique_ptr<APF> fpLog (const char* id, const char* name, float lo, float hi, float def, const char* unit)
 {
-    return std::make_unique<APF> (pid (id), name, logRange (lo, hi), def,
-                                  juce::AudioParameterFloatAttributes().withLabel (unit));
+    const juce::String u (unit);
+    auto attr = juce::AudioParameterFloatAttributes()
+                    .withLabel (u)
+                    .withStringFromValueFunction ([u] (float v, int)
+                    {
+                        if (u == "Hz")
+                            return v >= 1000.0f ? juce::String (v / 1000.0f, v >= 10000.0f ? 1 : 2) + " kHz"
+                                                : juce::String (juce::roundToInt (v)) + " Hz";
+                        return juce::String (juce::roundToInt (v)) + " " + u;
+                    })
+                    .withValueFromStringFunction ([] (const juce::String& t)
+                    {
+                        const auto s = t.trim().toLowerCase();
+                        return s.contains ("k") ? s.getFloatValue() * 1000.0f : s.getFloatValue();
+                    });
+    return std::make_unique<APF> (pid (id), name, logRange (lo, hi), def, attr);
 }
 
 std::unique_ptr<APC> cp (const char* id, const char* name, juce::StringArray items, int def)
@@ -142,6 +165,14 @@ void MasterChainProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     buffer.applyGainRamp (0, n, lastInGain, gIn);
     lastInGain = gIn;
 
+    // Meter di ingresso (picco dopo il gain)
+    for (int ch2 = 0; ch2 < nCh; ++ch2)
+    {
+        const float m = buffer.getMagnitude (ch2, 0, n);
+        mc::atomicMax (ch2 == 0 ? inPeakL : inPeakR, m);
+        if (nCh == 1) mc::atomicMax (inPeakR, m);
+    }
+
     // 1. Filtri
     if (p.filtOn->load() > 0.5f)
     {
@@ -190,7 +221,7 @@ void MasterChainProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
 
 juce::AudioProcessorEditor* MasterChainProcessor::createEditor()
 {
-    return new juce::GenericAudioProcessorEditor (*this);   // GUI generica: la grafica vera arriva dopo
+    return new MasterChainEditor (*this);
 }
 
 void MasterChainProcessor::getStateInformation (juce::MemoryBlock& dest)

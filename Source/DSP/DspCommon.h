@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 
 // DSP "puro" C++17: nessuna dipendenza da JUCE, così si può testare da riga di comando.
@@ -9,6 +10,12 @@ constexpr double kPi = 3.14159265358979323846;
 
 inline double dbToGain (double db) { return std::pow (10.0, db * 0.05); }
 inline double gainToDb (double g)  { return 20.0 * std::log10 (std::max (g, 1.0e-9)); }
+
+// Per i meter: il thread audio accumula il massimo, la GUI lo legge e lo azzera con exchange(0)
+inline void atomicMax (std::atomic<float>& a, float v)
+{
+    if (v > a.load (std::memory_order_relaxed)) a.store (v, std::memory_order_relaxed);
+}
 
 // Smoother a un polo per evitare scricchiolii sui parametri
 struct Smoother
