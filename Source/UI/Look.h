@@ -11,6 +11,7 @@ namespace col
     inline const juce::Colour text    { 0xffd7dbe2 };
     inline const juce::Colour dim     { 0xff8a92a0 };
     inline const juce::Colour input   { 0xff5fcf8a };
+    inline const juce::Colour tape    { 0xffd98c5f };
     inline const juce::Colour filters { 0xff4fb6c9 };
     inline const juce::Colour eq      { 0xffe0a43a };
     inline const juce::Colour comp    { 0xff6aa7ff };

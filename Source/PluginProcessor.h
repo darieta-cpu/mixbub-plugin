@@ -1,5 +1,6 @@
 #pragma once
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "DSP/Tape.h"
 #include "DSP/Filters.h"
 #include "DSP/PultecEQ.h"
 #include "DSP/BusCompressor.h"
@@ -45,6 +46,7 @@ private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
 
     // Moduli, in ordine di catena
+    mc::TapeModule    tape;       // dopo l'input (o prima del limiter, a scelta)
     mc::FilterModule  filters;
     mc::PultecEQ      pultec;
     mc::BusCompressor compressor;
@@ -55,7 +57,8 @@ private:
 
     struct Ptrs
     {
-        std::atomic<float> *inGain, *filtOn, *hpfFreq, *hpfSlope, *lpfFreq, *lpfSlope,
+        std::atomic<float> *inGain, *tapeOn, *tapeDrive, *tapeSpeed, *tapeBump, *tapeTone,
+                           *tapeMix, *tapeOut, *tapePos, *filtOn, *hpfFreq, *hpfSlope, *lpfFreq, *lpfSlope,
                            *eqOn, *eqLfFreq, *eqLfBoost, *eqLfAtten, *eqHfFreq, *eqHfBoost,
                            *eqHfBw, *eqHfAtFreq, *eqHfAtten, *eqSat,
                            *compOn, *compThresh, *compRatio, *compAttack, *compRelease,

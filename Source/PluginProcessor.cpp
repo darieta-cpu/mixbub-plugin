@@ -73,6 +73,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout MasterChainProcessor::create
 
     l.add (fp ("in_gain", "Input Gain", -12.0f, 12.0f, 0.0f, "dB", 0.1f));
 
+    // Nastro
+    l.add (bp ("tape_on", "Tape On", true));
+    l.add (fp ("tape_drive", "Tape Drive", 0.0f, 10.0f, 3.0f, "", 0.1f));
+    l.add (cp ("tape_speed", "Tape Speed", { "7.5 ips", "15 ips", "30 ips" }, 1));
+    l.add (fp ("tape_bump", "Tape Bump", 0.0f, 10.0f, 5.0f, "", 0.1f));
+    l.add (fp ("tape_tone", "Tape Tone", 0.0f, 10.0f, 2.0f, "", 0.1f));
+    l.add (fp ("tape_mix", "Tape Mix", 0.0f, 100.0f, 100.0f, "%", 1.0f));
+    l.add (fp ("tape_out", "Tape Output", -12.0f, 12.0f, 0.0f, "dB", 0.1f));
+    l.add (cp ("tape_pos", "Tape Position", { "After Input", "Before Limiter" }, 0));
+
     // Filtri
     l.add (bp ("filt_on", "Filters On", true));
     l.add (fpLog ("hpf_freq", "HPF Freq", 20.0f, 20000.0f, 20.0f, "Hz"));
@@ -118,6 +128,9 @@ MasterChainProcessor::MasterChainProcessor()
 {
     auto g = [this] (const char* id) { return apvts.getRawParameterValue (id); };
     p.inGain = g ("in_gain");
+    p.tapeOn = g ("tape_on");  p.tapeDrive = g ("tape_drive");  p.tapeSpeed = g ("tape_speed");
+    p.tapeBump = g ("tape_bump");  p.tapeTone = g ("tape_tone");  p.tapeMix = g ("tape_mix");
+    p.tapeOut = g ("tape_out");  p.tapePos = g ("tape_pos");
     p.filtOn = g ("filt_on");  p.hpfFreq = g ("hpf_freq");  p.hpfSlope = g ("hpf_slope");
     p.lpfFreq = g ("lpf_freq");  p.lpfSlope = g ("lpf_slope");
     p.eqOn = g ("eq_on");  p.eqLfFreq = g ("eq_lf_freq");  p.eqLfBoost = g ("eq_lf_boost");
@@ -145,7 +158,9 @@ void MasterChainProcessor::prepareToPlay (double sampleRate, int)
     pultec.prepare (sampleRate);
     compressor.prepare (sampleRate);
     limiter.prepare (sampleRate);
-    setLatencySamples (limiter.getLatencySamples());   // il DAW compensa la latenza del lookahead
+    tape.prepare (sampleRate);
+    // latenza costante: oversampler del nastro (sempre in linea) + lookahead del limiter
+    setLatencySamples (tape.getLatencySamples() + limiter.getLatencySamples());
     lastInGain = (float) juce::Decibels::decibelsToGain (p.inGain->load());
 }
 
@@ -172,6 +187,24 @@ void MasterChainProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         mc::atomicMax (ch2 == 0 ? inPeakL : inPeakR, m);
         if (nCh == 1) mc::atomicMax (inPeakR, m);
     }
+
+    // Nastro: dopo l'input oppure subito prima del limiter. Viene sempre eseguito (anche spento)
+    // perche' contiene il ritardo che mantiene costante la latenza.
+    auto runTape = [&]
+    {
+        mc::TapeModule::Params t;
+        t.on = p.tapeOn->load() > 0.5f;
+        t.drive = p.tapeDrive->load();
+        t.speedIdx = (int) p.tapeSpeed->load();
+        t.bump = p.tapeBump->load();
+        t.tone = p.tapeTone->load();
+        t.mix = p.tapeMix->load() * 0.01f;
+        t.outDb = p.tapeOut->load();
+        tape.setParams (t);
+        tape.process (ch, nCh, n);
+    };
+    const bool tapeLate = p.tapePos->load() > 0.5f;
+    if (! tapeLate) runTape();
 
     // 1. Filtri
     if (p.filtOn->load() > 0.5f)
@@ -206,6 +239,8 @@ void MasterChainProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         compressor.setParams (c);
         compressor.process (ch, nCh, n);
     }
+
+    if (tapeLate) runTape();
 
     // 4. Limiter (sempre in linea, anche in bypass, per mantenere costante la latenza)
     {

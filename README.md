@@ -24,8 +24,15 @@ Poi Re-scan.
     cmake --build build --config Release
 JUCE viene scaricato da GitHub, oppure usa una cartella `JUCE/` locale / `-DJUCE_PATH=...`.
 
+## Sezione nastro (TAPE)
+Dopo l'input (o, con l'interruttore Position, subito prima del limiter): saturazione asimmetrica con
+oversampling 2x, head bump, perdita di alte (Tone), rolloff che dipende dalla velocita' (7.5/15/30 ips),
+Mix parallelo e Output trim. Il modulo introduce 33 campioni di latenza fissa (anche se spento), che si
+sommano a quella del limiter e vengono comunicati al DAW. Nessun wow/flutter ne' rumore (per ora).
+
 ## Stato
 - DSP testato da riga di comando (filtri, compressore, limiter, EQ).
 - Parte JUCE (processor, parametri) non ancora compilata: se il build dà errori, mandameli.
 - GUI custom (Source/PluginEditor.*, Source/UI/*) con meter di input, GR compressore e GR limiter.
 - Limiter senza true peak/oversampling (passo successivo).
+- Finestra ridimensionabile (trascina l'angolo in basso a destra).

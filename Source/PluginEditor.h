@@ -4,11 +4,18 @@
 #include "UI/Meters.h"
 #include "UI/Controls.h"
 
-class MasterChainEditor : public juce::AudioProcessorEditor, private juce::Timer
+namespace layout
+{
+    constexpr int baseW = 1450;
+    constexpr int baseH = 470;
+}
+
+// Pannello con tutti i controlli, a dimensione fissa (baseW x baseH): l'editor lo scala
+class MainPanel : public juce::Component, private juce::Timer
 {
 public:
-    explicit MasterChainEditor (MasterChainProcessor&);
-    ~MasterChainEditor() override;
+    explicit MainPanel (MasterChainProcessor&);
+    ~MainPanel() override;
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -19,11 +26,16 @@ private:
     void setupToggle (juce::ToggleButton&, std::unique_ptr<ui::APVTS::ButtonAttachment>&, const char* id, juce::Colour);
 
     MasterChainProcessor& proc;
-    ui::Look look;                       // primo: distrutto per ultimo
+    ui::Look look;                       // dichiarato prima dei figli: distrutto per ultimo
 
     // Input
     ui::Knob gain;
     ui::LevelMeter inMeter;
+
+    // Nastro
+    juce::ToggleButton tapeOn;
+    ui::Knob tapeDrive, tapeBump, tapeTone, tapeMix, tapeOut;
+    ui::Combo tapeSpeed, tapePos;
 
     // Filtri
     juce::ToggleButton filtOn;
@@ -46,8 +58,18 @@ private:
     ui::Knob limThr, limCeil, limRel;
     ui::GRMeter limGr;
 
-    std::unique_ptr<ui::APVTS::ButtonAttachment> filtAtt, eqAtt, compAtt, limAtt;
-    juce::Rectangle<int> inputR, filtR, eqR, compR, limR;
+    std::unique_ptr<ui::APVTS::ButtonAttachment> tapeAtt, filtAtt, eqAtt, compAtt, limAtt;
+    juce::Rectangle<int> inputR, tapeR, filtR, eqR, compR, limR;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MasterChainEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainPanel)
+};
+
+class MasterChainEditor : public juce::AudioProcessorEditor
+{
+public:
+    explicit MasterChainEditor (MasterChainProcessor&);
+    void resized() override;
+
+private:
+    MainPanel panel;
 };

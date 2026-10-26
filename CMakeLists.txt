@@ -49,6 +49,7 @@ target_sources(MasterChain PRIVATE
     Source/UI/Meters.h
     Source/UI/Controls.h
     Source/DSP/DspCommon.h
+    Source/DSP/Tape.h
     Source/DSP/Filters.h
     Source/DSP/PultecEQ.h
     Source/DSP/BusCompressor.h

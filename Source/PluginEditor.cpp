@@ -2,9 +2,16 @@
 
 using namespace ui;
 
-MasterChainEditor::MasterChainEditor (MasterChainProcessor& p)
-    : AudioProcessorEditor (&p), proc (p),
+MainPanel::MainPanel (MasterChainProcessor& p)
+    : proc (p),
       gain (p.apvts, "in_gain", "INPUT GAIN", col::input),
+      tapeDrive (p.apvts, "tape_drive", "DRIVE", col::tape),
+      tapeBump (p.apvts, "tape_bump", "BUMP", col::tape),
+      tapeTone (p.apvts, "tape_tone", "TONE", col::tape),
+      tapeMix (p.apvts, "tape_mix", "MIX", col::tape),
+      tapeOut (p.apvts, "tape_out", "OUTPUT", col::tape),
+      tapeSpeed (p.apvts, "tape_speed", "Speed"),
+      tapePos (p.apvts, "tape_pos", "Position"),
       hpf (p.apvts, "hpf_freq", "HPF", col::filters),
       lpf (p.apvts, "lpf_freq", "LPF", col::filters),
       hpfSlope (p.apvts, "hpf_slope", "HPF Slope"),
@@ -33,43 +40,46 @@ MasterChainEditor::MasterChainEditor (MasterChainProcessor& p)
     setLookAndFeel (&look);
 
     for (juce::Component* c : std::initializer_list<juce::Component*> {
-             &gain, &inMeter, &filtOn, &hpf, &lpf, &hpfSlope, &lpfSlope,
+             &gain, &inMeter,
+             &tapeOn, &tapeDrive, &tapeBump, &tapeTone, &tapeMix, &tapeOut, &tapeSpeed, &tapePos,
+             &filtOn, &hpf, &lpf, &hpfSlope, &lpfSlope,
              &eqOn, &lfFreq, &hfFreq, &hfAtFreq, &lfBoost, &lfAtten, &hfBoost, &hfBw, &hfAtten, &sat,
              &compOn, &thr, &makeup, &mix, &ratio, &attack, &release, &compGr,
              &limOn, &limThr, &limCeil, &limRel, &limGr })
         addAndMakeVisible (c);
 
+    setupToggle (tapeOn, tapeAtt, "tape_on", col::tape);
     setupToggle (filtOn, filtAtt, "filt_on", col::filters);
     setupToggle (eqOn,   eqAtt,   "eq_on",   col::eq);
     setupToggle (compOn, compAtt, "comp_on", col::comp);
     setupToggle (limOn,  limAtt,  "lim_on",  col::limiter);
 
-    setSize (1180, 470);
+    setSize (layout::baseW, layout::baseH);
     startTimerHz (30);
 }
 
-MasterChainEditor::~MasterChainEditor()
+MainPanel::~MainPanel()
 {
     stopTimer();
     setLookAndFeel (nullptr);
 }
 
-void MasterChainEditor::setupToggle (juce::ToggleButton& b, std::unique_ptr<APVTS::ButtonAttachment>& att,
-                                     const char* id, juce::Colour accent)
+void MainPanel::setupToggle (juce::ToggleButton& b, std::unique_ptr<APVTS::ButtonAttachment>& att,
+                             const char* id, juce::Colour accent)
 {
     b.setButtonText ("ON");
     b.setColour (juce::ToggleButton::tickColourId, accent);
     att = std::make_unique<APVTS::ButtonAttachment> (proc.apvts, id, b);
 }
 
-void MasterChainEditor::timerCallback()
+void MainPanel::timerCallback()
 {
     inMeter.push (proc.takeInputPeak (0), proc.takeInputPeak (1));
     compGr.push (proc.takeCompGainReductionDb());
     limGr.push (proc.takeLimiterGainReductionDb());
 }
 
-void MasterChainEditor::drawPanel (juce::Graphics& g, juce::Rectangle<int> r, const juce::String& title, juce::Colour accent)
+void MainPanel::drawPanel (juce::Graphics& g, juce::Rectangle<int> r, const juce::String& title, juce::Colour accent)
 {
     g.setColour (col::panel);
     g.fillRoundedRectangle (r.toFloat(), 8.0f);
@@ -80,7 +90,7 @@ void MasterChainEditor::drawPanel (juce::Graphics& g, juce::Rectangle<int> r, co
     g.drawText (title, r.reduced (12, 10).removeFromTop (24), juce::Justification::centredLeft, false);
 }
 
-void MasterChainEditor::paint (juce::Graphics& g)
+void MainPanel::paint (juce::Graphics& g)
 {
     g.fillAll (col::bg);
 
@@ -89,22 +99,24 @@ void MasterChainEditor::paint (juce::Graphics& g)
     g.drawText ("MASTERCHAIN", 18, 8, 300, 30, juce::Justification::centredLeft, false);
     g.setColour (col::dim);
     g.setFont (12.0f);
-    g.drawText ("FILTERS  >  PULTEC EQ  >  BUS COMPRESSOR  >  LIMITER", 260, 8, 600, 30,
+    g.drawText ("INPUT  >  TAPE  >  FILTERS  >  PULTEC EQ  >  BUS COMPRESSOR  >  LIMITER", 260, 8, 800, 30,
                 juce::Justification::centredLeft, false);
 
     drawPanel (g, inputR, "INPUT",          col::input);
+    drawPanel (g, tapeR,  "TAPE",           col::tape);
     drawPanel (g, filtR,  "FILTERS",        col::filters);
     drawPanel (g, eqR,    "PULTEC EQ",      col::eq);
     drawPanel (g, compR,  "BUS COMPRESSOR", col::comp);
     drawPanel (g, limR,   "LIMITER",        col::limiter);
 }
 
-void MasterChainEditor::resized()
+void MainPanel::resized()
 {
     auto area = getLocalBounds().reduced (10);
     area.removeFromTop (44);
 
     inputR = area.removeFromLeft (110);  area.removeFromLeft (10);
+    tapeR  = area.removeFromLeft (260);  area.removeFromLeft (10);
     filtR  = area.removeFromLeft (190);  area.removeFromLeft (10);
     eqR    = area.removeFromLeft (330);  area.removeFromLeft (10);
     compR  = area.removeFromLeft (260);  area.removeFromLeft (10);
@@ -125,6 +137,21 @@ void MasterChainEditor::resized()
         auto c = content (inputR, nullptr);
         gain.setBounds (c.removeFromTop (knobH));
         inMeter.setBounds (c.withSizeKeepingCentre (72, c.getHeight()).reduced (0, 6));
+    }
+
+    // Nastro: 3 colonne x 2 righe + interruttore di posizione
+    {
+        auto c = content (tapeR, &tapeOn);
+        const int w = c.getWidth() / 3;
+        auto r1 = c.removeFromTop (knobH + 6);
+        tapeDrive.setBounds (r1.removeFromLeft (w).withSizeKeepingCentre (w, knobH));
+        tapeBump.setBounds  (r1.removeFromLeft (w).withSizeKeepingCentre (w, knobH));
+        tapeTone.setBounds  (r1.withSizeKeepingCentre (w, knobH));
+        auto r2 = c.removeFromTop (knobH + 6);
+        tapeMix.setBounds   (r2.removeFromLeft (w).withSizeKeepingCentre (w, knobH));
+        tapeOut.setBounds   (r2.removeFromLeft (w).withSizeKeepingCentre (w, knobH));
+        tapeSpeed.setBounds (r2.withSizeKeepingCentre (w - 4, comboH));
+        tapePos.setBounds   (c.removeFromTop (comboH + 14).withSizeKeepingCentre (c.getWidth() - 10, comboH));
     }
 
     // Filtri: due blocchi (manopola + pendenza)
@@ -182,4 +209,23 @@ void MasterChainEditor::resized()
         limCeil.setBounds (c.removeFromTop (knobH + 6));
         limRel.setBounds  (c.removeFromTop (knobH + 6));
     }
+}
+
+//==============================================================================
+MasterChainEditor::MasterChainEditor (MasterChainProcessor& p)
+    : AudioProcessorEditor (&p), panel (p)
+{
+    addAndMakeVisible (panel);
+    panel.setBounds (0, 0, layout::baseW, layout::baseH);
+
+    setResizable (true, true);
+    setResizeLimits (layout::baseW / 2, layout::baseH / 2, layout::baseW * 2, layout::baseH * 2);
+    if (auto* c = getConstrainer())
+        c->setFixedAspectRatio ((double) layout::baseW / (double) layout::baseH);
+    setSize (layout::baseW, layout::baseH);
+}
+
+void MasterChainEditor::resized()
+{
+    panel.setTransform (juce::AffineTransform::scale ((float) getWidth() / (float) layout::baseW));
 }
