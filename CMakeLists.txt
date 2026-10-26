@@ -1,3 +1,6 @@
+# Windows: runtime MSVC statico, cosi' non serve installare i Visual C++ Redistributable
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 # Per Apple Silicon + Intel (deve stare PRIMA di project())
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "")
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "")
