@@ -1,4 +1,4 @@
-name: Build MasterChain (macOS)
+name: Build MasterChain
 
 on:
   push:
@@ -32,4 +32,29 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: MasterChain-macOS
+          path: dist/*.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -DMC_COPY=FALSE
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist | Out-Null
+          $vst3 = Get-ChildItem -Path build -Recurse -Directory -Filter "MasterChain.vst3" | Select-Object -First 1
+          if (-not $vst3) { $vst3 = Get-ChildItem -Path build -Recurse -File -Filter "MasterChain.vst3" | Select-Object -First 1 }
+          Write-Host "VST3: $($vst3.FullName)"
+          Compress-Archive -Path $vst3.FullName -DestinationPath dist/MasterChain-VST3-Windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MasterChain-Windows
           path: dist/*.zip
