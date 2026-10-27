@@ -96,7 +96,7 @@ void MainPanel::paint (juce::Graphics& g)
 
     g.setColour (col::text);
     g.setFont (g.getCurrentFont().boldened().withHeight (22.0f));
-    g.drawText ("MASTERCHAIN", 18, 8, 300, 30, juce::Justification::centredLeft, false);
+    g.drawText ("MIXBUS CHAIN", 18, 8, 300, 30, juce::Justification::centredLeft, false);
     g.setColour (col::dim);
     g.setFont (12.0f);
     g.drawText ("INPUT  >  TAPE  >  FILTERS  >  PULTEC EQ  >  BUS COMPRESSOR  >  LIMITER", 260, 8, 800, 30,

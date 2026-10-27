@@ -1,20 +1,20 @@
-# MasterChain (v0.1)
+# Mixbus Chain (v0.1) - DaniArieta
 Catena master: Filtri HPF/LPF -> EQ Pultec -> Compressore bus (SSL) -> Limiter lookahead.
 
 ## Build su GitHub (consigliato)
-Fai push del progetto su un repository: Actions > "Build MasterChain (macOS)" parte da solo
-(o con "Run workflow"). A fine build scarichi l'artifact `MasterChain-macOS` con VST3 e AU
+Fai push del progetto su un repository: Actions > "Build Mixbus Chain" parte da solo
+(o con "Run workflow"). A fine build scarichi l'artifact `MixbusChain-macOS` con VST3 e AU
 (universal: Apple Silicon + Intel).
 
 Installazione sul Mac:
-    unzip MasterChain-VST3.zip -d ~/Library/Audio/Plug-Ins/VST3/
-    xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/MasterChain.vst3
+    unzip MixbusChain-VST3.zip -d ~/Library/Audio/Plug-Ins/VST3/
+    xattr -dr com.apple.quarantine "$HOME/Library/Audio/Plug-Ins/VST3/Mixbus Chain.vst3"
 Poi in Reaper: Preferences > Plug-ins > VST > Re-scan.
-(AU: stessa cosa con ~/Library/Audio/Plug-Ins/Components/MasterChain.component)
+(AU: stessa cosa con "~/Library/Audio/Plug-Ins/Components/Mixbus Chain.component")
 
 ## Windows
-Lo stesso workflow produce anche l'artifact `MasterChain-Windows` (VST3 a 64 bit).
-Estrai lo zip: dentro c'e' la cartella `MasterChain.vst3`. Copiala in
+Lo stesso workflow produce anche l'artifact `MixbusChain-Windows` (VST3 a 64 bit).
+Estrai lo zip: dentro c'e' la cartella `Mixbus Chain.vst3`. Copiala in
 `C:\Program Files\Common Files\VST3\` (servono i permessi di amministratore), oppure in una
 cartella tua da aggiungere in Reaper: Options > Preferences > Plug-ins > VST > Edit path list.
 Poi Re-scan.
