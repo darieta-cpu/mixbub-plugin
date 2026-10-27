@@ -1,4 +1,4 @@
-name: Build MasterChain
+name: Build Mixbus Chain
 
 on:
   push:
@@ -20,18 +20,18 @@ jobs:
       - name: Sign (ad-hoc) and package
         run: |
           mkdir dist
-          VST3=$(find build -name "MasterChain.vst3" -type d | head -n 1)
-          AU=$(find build -name "MasterChain.component" -type d | head -n 1)
+          VST3=$(find build -name "*.vst3" -type d | head -n 1)
+          AU=$(find build -name "*.component" -type d | head -n 1)
           echo "VST3: $VST3"; echo "AU: $AU"
           codesign --force --deep -s - "$VST3"
           codesign --force --deep -s - "$AU"
-          lipo -archs "$VST3/Contents/MacOS/MasterChain"
-          ditto -c -k --keepParent "$VST3" dist/MasterChain-VST3.zip
-          ditto -c -k --keepParent "$AU" dist/MasterChain-AU.zip
+          lipo -archs "$(find "$VST3/Contents/MacOS" -type f | head -n 1)"
+          ditto -c -k --keepParent "$VST3" dist/MixbusChain-VST3.zip
+          ditto -c -k --keepParent "$AU" dist/MixbusChain-AU.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MasterChain-macOS
+          name: MixbusChain-macOS
           path: dist/*.zip
 
   windows:
@@ -49,12 +49,12 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path dist | Out-Null
-          $vst3 = Get-ChildItem -Path build -Recurse -Directory -Filter "MasterChain.vst3" | Select-Object -First 1
-          if (-not $vst3) { $vst3 = Get-ChildItem -Path build -Recurse -File -Filter "MasterChain.vst3" | Select-Object -First 1 }
+          $vst3 = Get-ChildItem -Path build -Recurse -Directory -Filter "*.vst3" | Select-Object -First 1
+          if (-not $vst3) { $vst3 = Get-ChildItem -Path build -Recurse -File -Filter "*.vst3" | Select-Object -First 1 }
           Write-Host "VST3: $($vst3.FullName)"
-          Compress-Archive -Path $vst3.FullName -DestinationPath dist/MasterChain-VST3-Windows.zip
+          Compress-Archive -Path $vst3.FullName -DestinationPath dist/MixbusChain-VST3-Windows.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MasterChain-Windows
+          name: MixbusChain-Windows
           path: dist/*.zip
