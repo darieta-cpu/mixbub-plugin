@@ -55,7 +55,7 @@ MainPanel::MainPanel (MasterChainProcessor& p)
     setupToggle (limOn,  limAtt,  "lim_on",  col::limiter);
 
     setSize (layout::baseW, layout::baseH);
-    startTimerHz (30);
+    startTimerHz (60);
 }
 
 MainPanel::~MainPanel()
@@ -79,28 +79,71 @@ void MainPanel::timerCallback()
     limGr.push (proc.takeLimiterGainReductionDb());
 }
 
-void MainPanel::drawPanel (juce::Graphics& g, juce::Rectangle<int> r, const juce::String& title, juce::Colour accent)
+void MainPanel::drawPanel (juce::Graphics& g, juce::Rectangle<int> r, const juce::String& title, juce::Colour)
 {
-    g.setColour (col::panel);
-    g.fillRoundedRectangle (r.toFloat(), 8.0f);
-    g.setColour (col::edge);
-    g.drawRoundedRectangle (r.toFloat().reduced (0.5f), 8.0f, 1.0f);
-    g.setColour (accent);
-    g.setFont (13.0f);
+    g.setColour (juce::Colours::white.withAlpha (0.04f));
+    g.fillRoundedRectangle (r.toFloat(), 4.0f);
+    g.setColour (juce::Colours::white.withAlpha (0.65f));
+    g.drawRoundedRectangle (r.toFloat().reduced (0.5f), 4.0f, 1.0f);
+    g.setColour (juce::Colours::white.withAlpha (0.3f));
+    g.drawHorizontalLine (r.getY() + 36, (float) r.getX() + 10.0f, (float) r.getRight() - 10.0f);
+
+    g.setColour (juce::Colours::white);
+    g.setFont (juce::FontOptions (13.0f).withStyle ("Bold"));
     g.drawText (title, r.reduced (12, 10).removeFromTop (24), juce::Justification::centredLeft, false);
 }
 
 void MainPanel::paint (juce::Graphics& g)
 {
-    g.fillAll (col::bg);
+    const int w = getWidth(), h = getHeight();
 
-    g.setColour (col::text);
-    g.setFont (g.getCurrentFont().boldened().withHeight (22.0f));
-    g.drawText ("MIXBUS CHAIN", 18, 8, 300, 30, juce::Justification::centredLeft, false);
-    g.setColour (col::dim);
-    g.setFont (12.0f);
-    g.drawText ("INPUT  >  TAPE  >  FILTERS  >  PULTEC EQ  >  BUS COMPRESSOR  >  LIMITER", 260, 8, 800, 30,
+    // pannello frontale
+    juce::ColourGradient bg (juce::Colour (0xff2a2b2e), 0.0f, 0.0f,
+                             juce::Colour (0xff151618), 0.0f, (float) h, false);
+    g.setGradientFill (bg);
+    g.fillAll();
+
+    // orecchie da rack con viti
+    auto screw = [&g] (float cx, float cy)
+    {
+        g.setColour (juce::Colour (0xff0b0b0c));
+        g.fillEllipse (cx - 6.0f, cy - 6.0f, 12.0f, 12.0f);
+        g.setColour (juce::Colour (0xff8b8d93));
+        g.fillEllipse (cx - 5.0f, cy - 5.0f, 10.0f, 10.0f);
+        juce::Path slot;
+        slot.addRectangle (-4.0f, -0.8f, 8.0f, 1.6f);
+        slot.applyTransform (juce::AffineTransform::rotation (0.6f).translated (cx, cy));
+        g.setColour (juce::Colour (0xff2d2e32));
+        g.fillPath (slot);
+    };
+
+    for (int side = 0; side < 2; ++side)
+    {
+        const int ex = side == 0 ? 0 : w - 22;
+        g.setColour (juce::Colour (0xff333438));
+        g.fillRect (ex, 0, 22, h);
+        g.setColour (juce::Colour (0xff17181a));
+        g.drawVerticalLine (side == 0 ? 21 : w - 22, 0.0f, (float) h);
+        screw ((float) ex + 11.0f, 22.0f);
+        screw ((float) ex + 11.0f, (float) h - 22.0f);
+    }
+
+    // intestazione
+    g.setColour (juce::Colour (0xfff2f2f2));
+    g.setFont (juce::FontOptions (22.0f).withStyle ("Bold"));
+    g.drawText ("MIXBUS CHAIN", 30, 8, 300, 30, juce::Justification::centredLeft, false);
+
+    g.setColour (col::dim.withAlpha (0.8f));
+    g.setFont (juce::FontOptions (11.0f));
+    g.drawText ("INPUT  >  TAPE  >  FILTERS  >  PULTEC EQ  >  BUS COMPRESSOR  >  LIMITER", 300, 8, 800, 30,
                 juce::Justification::centredLeft, false);
+
+    g.setColour (col::accent);
+    g.setFont (juce::FontOptions (22.0f).withStyle ("Bold"));
+    g.drawText ("DaniArieta", w - 30 - 260, 8, 260, 30, juce::Justification::centredRight, false);
+
+    g.setColour (col::accent);
+    g.fillRect (30, 42, w - 60, 2);
 
     drawPanel (g, inputR, "INPUT",          col::input);
     drawPanel (g, tapeR,  "TAPE",           col::tape);
@@ -112,7 +155,7 @@ void MainPanel::paint (juce::Graphics& g)
 
 void MainPanel::resized()
 {
-    auto area = getLocalBounds().reduced (10);
+    auto area = getLocalBounds().reduced (26, 10);
     area.removeFromTop (44);
 
     inputR = area.removeFromLeft (110);  area.removeFromLeft (10);

@@ -11,7 +11,8 @@ struct Knob : public juce::Component
 {
     Knob (APVTS& apvts, const juce::String& id, const juce::String& name, juce::Colour accent)
     {
-        label.setText (name, juce::dontSendNotification);
+        label.setText (name.toUpperCase(), juce::dontSendNotification);
+        label.setFont (juce::FontOptions (11.0f).withStyle ("Bold"));
         label.setJustificationType (juce::Justification::centred);
         label.setInterceptsMouseClicks (false, false);
 
@@ -42,7 +43,8 @@ struct Combo : public juce::Component
 {
     Combo (APVTS& apvts, const juce::String& id, const juce::String& name)
     {
-        label.setText (name, juce::dontSendNotification);
+        label.setText (name.toUpperCase(), juce::dontSendNotification);
+        label.setFont (juce::FontOptions (10.5f).withStyle ("Bold"));
         label.setJustificationType (juce::Justification::centredLeft);
         label.setInterceptsMouseClicks (false, false);
 
