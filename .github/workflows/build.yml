@@ -9,7 +9,7 @@ jobs:
   macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DMC_COPY=FALSE
@@ -29,7 +29,7 @@ jobs:
           ditto -c -k --keepParent "$VST3" dist/MixbusChain-VST3.zip
           ditto -c -k --keepParent "$AU" dist/MixbusChain-AU.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: MixbusChain-macOS
           path: dist/*.zip
@@ -37,7 +37,7 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Configure
         run: cmake -B build -DMC_COPY=FALSE
@@ -49,12 +49,22 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path dist | Out-Null
+          New-Item -ItemType Directory -Path payload | Out-Null
           $vst3 = Get-ChildItem -Path build -Recurse -Directory -Filter "*.vst3" | Select-Object -First 1
-          if (-not $vst3) { $vst3 = Get-ChildItem -Path build -Recurse -File -Filter "*.vst3" | Select-Object -First 1 }
+          if (-not $vst3) { throw "Cartella .vst3 non trovata" }
           Write-Host "VST3: $($vst3.FullName)"
+          Copy-Item -Path $vst3.FullName -Destination "payload\Mixbus Chain.vst3" -Recurse
           Compress-Archive -Path $vst3.FullName -DestinationPath dist/MixbusChain-VST3-Windows.zip
 
-      - uses: actions/upload-artifact@v4
+      - name: Build installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+      - uses: actions/upload-artifact@v6
         with:
           name: MixbusChain-Windows
-          path: dist/*.zip
+          path: |
+            output/MixbusChain-Setup.exe
+            dist/*.zip
